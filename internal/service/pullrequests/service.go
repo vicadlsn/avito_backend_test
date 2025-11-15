@@ -23,21 +23,21 @@ type PRRepository interface {
 	IsReviewerAssigned(ctx context.Context, prID, userID string) (bool, error)
 }
 
-type PRUserRepository interface {
-	GetUserByID(ctx context.Context, userID string) (*domain.User, error)
-	GetActiveByTeam(ctx context.Context, teamName string, excludeUserIDs []string) ([]domain.User, error) 
+type UserRepository interface {
+	GetByID(ctx context.Context, userID string) (*domain.User, error)
+	GetActiveByTeam(ctx context.Context, teamName string, excludeUserIDs []string) ([]domain.User, error)
 }
 
 type PullRequestService struct {
 	prRepo    PRRepository
-	userRepo  PRUserRepository
+	userRepo  UserRepository
 	txManager *db.TransactionManager
 	lg        *slog.Logger
 }
 
 func NewPullRequestService(
 	prRepo PRRepository,
-	userRepo PRUserRepository,
+	userRepo UserRepository,
 	txManager *db.TransactionManager,
 	lg *slog.Logger,
 ) *PullRequestService {
@@ -188,7 +188,7 @@ func (s *PullRequestService) ReassignReviewer(ctx context.Context, prID, oldUser
 		return nil, "", domain.ErrNotAssigned
 	}
 
-	oldReviewer, err := s.userRepo.GetUserByID(ctx, oldUserID)
+	oldReviewer, err := s.userRepo.GetByID(ctx, oldUserID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			return nil, "", domain.ErrUserNotFound
@@ -248,7 +248,7 @@ func (s *PullRequestService) ReassignReviewer(ctx context.Context, prID, oldUser
 }
 
 func (s *PullRequestService) getPRAuthor(ctx context.Context, authorID string) (*domain.User, error) {
-	author, err := s.userRepo.GetUserByID(ctx, authorID)
+	author, err := s.userRepo.GetByID(ctx, authorID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			return nil, domain.ErrUserNotFound
