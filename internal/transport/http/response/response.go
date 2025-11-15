@@ -5,6 +5,8 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+
+	"avito_backend_task/internal/domain"
 )
 
 type ErrorCode string
@@ -30,12 +32,6 @@ type ErrorResponse struct {
 }
 
 var (
-	ErrTeamExists     = errors.New("team already exists")
-	ErrPRExists       = errors.New("pull request already exists")
-	ErrPRMerged       = errors.New("pull request is merged")
-	ErrNotAssigned    = errors.New("reviewer not assigned")
-	ErrNoCandidate    = errors.New("no candidate available")
-	ErrNotFound       = errors.New("not found")
 	ErrInvalidRequest = errors.New("invalid request")
 )
 
@@ -46,35 +42,50 @@ type ErrorMapping struct {
 }
 
 var errorMappings = map[error]ErrorMapping{
-	ErrTeamExists: {
+	domain.ErrTeamExists: {
 		Code:       ErrorCodeTeamExists,
 		Message:    "team_name already exists",
 		StatusCode: http.StatusBadRequest,
 	},
-	ErrPRExists: {
+	domain.ErrPRExists: {
 		Code:       ErrorCodePRExists,
 		Message:    "PR id already exists",
 		StatusCode: http.StatusConflict,
 	},
-	ErrPRMerged: {
+	domain.ErrPRMerged: {
 		Code:       ErrorCodePRMerged,
 		Message:    "cannot reassign on merged PR",
 		StatusCode: http.StatusConflict,
 	},
-	ErrNotAssigned: {
+	domain.ErrNotAssigned: {
 		Code:       ErrorCodeNotAssigned,
 		Message:    "reviewer is not assigned to this PR",
 		StatusCode: http.StatusConflict,
 	},
-	ErrNoCandidate: {
+	domain.ErrNoCandidate: {
 		Code:       ErrorCodeNoCandidate,
 		Message:    "no active replacement candidate in team",
 		StatusCode: http.StatusConflict,
 	},
-	ErrNotFound: {
+	domain.ErrPRNotFound: {
 		Code:       ErrorCodeNotFound,
-		Message:    "resource not found",
+		Message:    "pull request not found",
 		StatusCode: http.StatusNotFound,
+	},
+	domain.ErrTeamNotFound: {
+		Code:       ErrorCodeNotFound,
+		Message:    "team not found",
+		StatusCode: http.StatusNotFound,
+	},
+	domain.ErrUserNotFound: {
+		Code:       ErrorCodeNotFound,
+		Message:    "user not found",
+		StatusCode: http.StatusNotFound,
+	},
+	domain.ErrInvalidInput: {
+		Code:       ErrorCodeBadRequest,
+		Message:    "invalid input",
+		StatusCode: http.StatusBadRequest,
 	},
 	ErrInvalidRequest: {
 		Code:       ErrorCodeBadRequest,
@@ -89,6 +100,7 @@ func MapError(err error) ErrorMapping {
 			return mapping
 		}
 	}
+
 	return ErrorMapping{
 		Code:       ErrorCodeInternalError,
 		Message:    "internal server error",
