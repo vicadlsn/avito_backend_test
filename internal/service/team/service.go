@@ -11,12 +11,14 @@ import (
 	"avito_backend_task/pkg/db"
 )
 
+//go:generate mockery --name=TeamRepository --output=./mocks --case=underscore
 type TeamRepository interface {
 	Create(ctx context.Context, teamName string) error
 	Exists(ctx context.Context, teamName string) (bool, error)
 	GetTeamByName(ctx context.Context, teamName string) (*domain.Team, error)
 }
 
+//go:generate mockery --name=UserRepository --output=./mocks --case=underscore
 type UserRepository interface {
 	Upsert(ctx context.Context, user domain.TeamMember, teamName string) error
 	GetByID(ctx context.Context, userID string) (*domain.User, error)
@@ -26,12 +28,12 @@ type UserRepository interface {
 type TeamService struct {
 	teamRepo  TeamRepository
 	userRepo  UserRepository
-	txManager *db.TransactionManager
+	txManager db.TransactionManagerInterface
 	lg        *slog.Logger
 }
 
 func NewTeamService(teamRepo TeamRepository, userRepo UserRepository,
-	txManager *db.TransactionManager, lg *slog.Logger) *TeamService {
+	txManager db.TransactionManagerInterface, lg *slog.Logger) *TeamService {
 	return &TeamService{
 		teamRepo:  teamRepo,
 		userRepo:  userRepo,

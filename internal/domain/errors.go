@@ -9,8 +9,7 @@ var (
 	ErrPRMerged     = errors.New("pull request is merged")
 	ErrNotAssigned  = errors.New("reviewer not assigned")
 	ErrNoCandidate  = errors.New("no candidate available")
-	ErrPRNotFound    = errors.New("pull request not found")
-	ErrTeamNotFound  = errors.New("team not found")
-	ErrUserNotFound  = errors.New("user not found")
+	ErrPRNotFound   = errors.New("pull request not found")
+	ErrTeamNotFound = errors.New("team not found")
+	ErrUserNotFound = errors.New("user not found")
 )
-

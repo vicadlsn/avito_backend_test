@@ -13,7 +13,8 @@ import (
 	"avito_backend_task/pkg/db"
 )
 
-type PRRepository interface {
+//go:generate mockery --name=PullRequestRepository --output=./mocks --case=underscore
+type PullRequestRepository interface {
 	CreatePullRequest(ctx context.Context, pr domain.PullRequestCreate) (time.Time, error)
 	Exists(ctx context.Context, prID string) (bool, error)
 	AssignReviewer(ctx context.Context, prID, reviewerID string) error
@@ -23,22 +24,23 @@ type PRRepository interface {
 	IsReviewerAssigned(ctx context.Context, prID, userID string) (bool, error)
 }
 
+//go:generate mockery --name=UserRepository --output=./mocks --case=underscore
 type UserRepository interface {
 	GetByID(ctx context.Context, userID string) (*domain.User, error)
 	GetActiveByTeam(ctx context.Context, teamName string, excludeUserIDs []string) ([]domain.User, error)
 }
 
 type PullRequestService struct {
-	prRepo    PRRepository
+	prRepo    PullRequestRepository
 	userRepo  UserRepository
-	txManager *db.TransactionManager
+	txManager db.TransactionManagerInterface
 	lg        *slog.Logger
 }
 
 func NewPullRequestService(
-	prRepo PRRepository,
+	prRepo PullRequestRepository,
 	userRepo UserRepository,
-	txManager *db.TransactionManager,
+	txManager db.TransactionManagerInterface,
 	lg *slog.Logger,
 ) *PullRequestService {
 	return &PullRequestService{

@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	ErrNotFound     = errors.New("not found")
+	ErrNotFound = errors.New("not found")
 )
 
 func HandleDBError(err error) error {
@@ -16,4 +16,3 @@ func HandleDBError(err error) error {
 	}
 	return err
 }
-

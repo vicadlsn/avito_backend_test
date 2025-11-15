@@ -1,7 +1,6 @@
 package users
 
 import (
-	
 	"context"
 	"errors"
 	"fmt"
@@ -11,10 +10,12 @@ import (
 	"avito_backend_task/internal/repository"
 )
 
+//go:generate mockery --name=UserRepository --output=./mocks --case=underscore
 type UserRepository interface {
 	SetIsActive(ctx context.Context, userID string, isActive bool) (*domain.User, error)
 }
 
+//go:generate mockery --name=PullRequestRepository --output=./mocks --case=underscore
 type PullRequestRepository interface {
 	GetPullRequestsByReviewer(ctx context.Context, userID string) ([]domain.PullRequestShort, error)
 }

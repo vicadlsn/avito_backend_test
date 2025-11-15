@@ -25,6 +25,10 @@ func (db *DB) Conn(ctx context.Context) trmpgx.Tr {
 	return db.getter.DefaultTrOrDB(ctx, db.pool)
 }
 
+type TransactionManagerInterface interface {
+	Do(ctx context.Context, fn func(ctx context.Context) error) error
+}
+
 type TransactionManager struct {
 	manager *manager.Manager
 }

@@ -17,9 +17,9 @@ import (
 
 	"avito_backend_task/internal/config"
 	"avito_backend_task/internal/repository"
-	"avito_backend_task/internal/service/pullrequests"
-	"avito_backend_task/internal/service/teams"
-	"avito_backend_task/internal/service/users"
+	pullrequest "avito_backend_task/internal/service/pullrequest"
+	team "avito_backend_task/internal/service/team"
+	user "avito_backend_task/internal/service/user"
 	transport "avito_backend_task/internal/transport/http"
 	"avito_backend_task/pkg/db"
 )
@@ -34,43 +34,31 @@ func main() {
 		log.Fatalf("error loading configuration: %v", err)
 	}
 
-	dsn := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		cfg.Database.Host,
-		cfg.Database.Port,
-		cfg.Database.User,
-		cfg.Database.Password,
-		cfg.Database.Name,
-	)
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: cfg.ParseLogLevel(),
+	}))
 
-	pool, err := pgxpool.New(context.Background(), dsn)
+	pool, err := connectDB(&cfg.Database)
 	if err != nil {
-		log.Fatalf("error creating connection pool: %v", err)
+		logger.Error("error connecting to db", slog.Any("error", err))
+		os.Exit(1)
 	}
 	defer pool.Close()
-
-	if err := pool.Ping(context.Background()); err != nil {
-		log.Fatalf("error connecting to database: %v", err)
-	}
 
 	dbInstance := db.NewDB(pool)
 	txManager, err := db.NewTransactionManager(pool)
 	if err != nil {
-		log.Fatalf("error creating transaction manager: %v", err)
+		logger.Error("error creating transaction manager", slog.Any("error", err))
+		os.Exit(1)
 	}
-
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: cfg.ParseLogLevel(),
-	}))
-	slog.SetDefault(logger)
 
 	teamRepo := repository.NewTeamRepository(dbInstance)
 	userRepo := repository.NewUserRepository(dbInstance)
 	prRepo := repository.NewPullRequestRepository(dbInstance)
 
-	teamService := teams.NewTeamService(teamRepo, userRepo, txManager, logger)
-	userService := users.NewUserService(userRepo, prRepo, logger)
-	prService := pullrequests.NewPullRequestService(prRepo, userRepo, txManager, logger)
+	teamService := team.NewTeamService(teamRepo, userRepo, txManager, logger)
+	userService := user.NewUserService(userRepo, prRepo, logger)
+	prService := pullrequest.NewPullRequestService(prRepo, userRepo, txManager, logger)
 
 	services := transport.Services{
 		TeamService:        teamService,
@@ -84,11 +72,8 @@ func main() {
 
 	addr := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
 	server := &http.Server{
-		Addr:         addr,
-		Handler:      router,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		Addr:    addr,
+		Handler: router,
 	}
 
 	go func() {
@@ -114,4 +99,27 @@ func main() {
 	}
 
 	logger.Info("service stopped")
+}
+
+func connectDB(cfg *config.DatabaseConfig) (*pgxpool.Pool, error) {
+	dsn := fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		cfg.Host,
+		cfg.Port,
+		cfg.User,
+		cfg.Password,
+		cfg.Name,
+	)
+
+	pool, err := pgxpool.New(context.Background(), dsn)
+	if err != nil {
+		return nil, fmt.Errorf("error creating connection pool: %w", err)
+	}
+
+	if err := pool.Ping(context.Background()); err != nil {
+		pool.Close()
+		return nil, fmt.Errorf("error connecting to database: %w", err)
+	}
+
+	return pool, nil
 }
