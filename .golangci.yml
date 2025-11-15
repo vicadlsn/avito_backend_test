@@ -1,0 +1,46 @@
+version: "2"
+
+run:
+    include:
+        - "./internal"
+        - "./cmd"
+        - "./pkg"
+
+    concurrency: 4
+    timeout: 5m
+
+formatters:
+    enable:
+        - gofmt
+        - goimports
+
+linters:
+    disable-all: true
+    enable:
+        - govet
+        - errcheck
+        - staticcheck
+        - unused
+        - ineffassign
+        - sloglint
+
+linters-settings:
+    gofmt:
+        simplify: true
+    goimports:
+        local-prefixes: avito_backend_task
+
+    sloglint:
+        no-mixed-args: true
+        key-naming-case: "snake"
+        attr-naming-case: "snake"
+        context: "only"
+issues:
+    fast: true
+
+    severity: warning
+
+output:
+    format: colored-line-number
+    print-issued-lines: true
+    print-linter-name: true
