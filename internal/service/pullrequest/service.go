@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"math/rand"
 	"time"
 
 	"avito_backend_task/internal/domain"
 	"avito_backend_task/internal/repository"
+	"avito_backend_task/internal/service/utils"
 	"avito_backend_task/pkg/db"
 )
 
@@ -84,7 +84,7 @@ func (s *PullRequestService) CreatePullRequest(ctx context.Context, prCreate dom
 		}
 		log.Debug("found candidates", slog.Int("count", len(candidates)))
 
-		reviewers := selectRandomReviewers(candidates, 2)
+		reviewers := utils.SelectRandomReviewers(candidates, 2)
 		reviewerIDs := make([]string, len(reviewers))
 		for i, r := range reviewers {
 			reviewerIDs[i] = r.UserID
@@ -218,7 +218,7 @@ func (s *PullRequestService) ReassignReviewer(ctx context.Context, prID, oldUser
 			return domain.ErrNoCandidate
 		}
 
-		newReviewer := selectRandomReviewers(candidates, 1)[0]
+		newReviewer := utils.SelectRandomReviewers(candidates, 1)[0]
 		log.Info("selected new reviewer", slog.String("new_user_id", newReviewer.UserID))
 
 		if err := s.prRepo.RemoveReviewer(txCtx, prID, oldUserID); err != nil {
@@ -266,23 +266,4 @@ func (s *PullRequestService) getReviewCandidates(ctx context.Context, teamName s
 	}
 
 	return candidates, nil
-}
-
-func selectRandomReviewers(candidates []domain.User, maxCount int) []domain.User {
-	if len(candidates) == 0 {
-		return []domain.User{}
-	}
-
-	count := maxCount
-	if len(candidates) < count {
-		count = len(candidates)
-	}
-
-	shuffled := make([]domain.User, len(candidates))
-	copy(shuffled, candidates)
-	rand.Shuffle(len(shuffled), func(i, j int) {
-		shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
-	})
-
-	return shuffled[:count]
 }

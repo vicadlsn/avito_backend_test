@@ -78,7 +78,6 @@ func (r *PullRequestRepository) GetPullRequestByID(ctx context.Context, prID str
 		SELECT user_id
 		FROM pr_reviewers
 		WHERE pull_request_id = $1
-		ORDER BY assigned_at
 	`, prID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query reviewers: %w", err)
@@ -140,10 +139,36 @@ func (r *PullRequestRepository) GetPullRequestsByReviewer(ctx context.Context, u
 		FROM pull_requests pr
 		INNER JOIN pr_reviewers r ON pr.pull_request_id = r.pull_request_id
 		WHERE r.user_id = $1
-		ORDER BY pr.created_at DESC
 	`, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query PRs: %w", err)
+	}
+	defer rows.Close()
+
+	var prs []domain.PullRequestShort
+	for rows.Next() {
+		var pr domain.PullRequestShort
+		var status string
+		if err := rows.Scan(&pr.PullRequestID, &pr.PullRequestName, &pr.AuthorID, &status); err != nil {
+			return nil, fmt.Errorf("failed to scan PR: %w", err)
+		}
+		pr.Status = domain.PRStatus(status)
+		prs = append(prs, pr)
+	}
+
+	return prs, rows.Err()
+}
+
+func (r *PullRequestRepository) GetOpenPullRequestsByReviewer(ctx context.Context, userID string) ([]domain.PullRequestShort, error) {
+	conn := r.db.Conn(ctx)
+	rows, err := conn.Query(ctx, `
+		SELECT pr.pull_request_id, pr.pull_request_name, pr.author_id, pr.status
+		FROM pull_requests pr
+		INNER JOIN pr_reviewers r ON pr.pull_request_id = r.pull_request_id
+		WHERE r.user_id = $1 AND pr.status = 'OPEN'
+	`, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query open PRs: %w", err)
 	}
 	defer rows.Close()
 

@@ -57,7 +57,7 @@ func main() {
 	prRepo := repository.NewPullRequestRepository(dbInstance)
 
 	teamService := team.NewTeamService(teamRepo, userRepo, txManager, logger)
-	userService := user.NewUserService(userRepo, prRepo, logger)
+	userService := user.NewUserService(userRepo, prRepo, txManager, logger)
 	prService := pullrequest.NewPullRequestService(prRepo, userRepo, txManager, logger)
 
 	services := transport.Services{

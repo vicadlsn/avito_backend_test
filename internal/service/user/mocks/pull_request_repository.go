@@ -14,6 +14,84 @@ type PullRequestRepository struct {
 	mock.Mock
 }
 
+// AssignReviewer provides a mock function with given fields: ctx, prID, reviewerID
+func (_m *PullRequestRepository) AssignReviewer(ctx context.Context, prID string, reviewerID string) error {
+	ret := _m.Called(ctx, prID, reviewerID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AssignReviewer")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, prID, reviewerID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// GetOpenPullRequestsByReviewer provides a mock function with given fields: ctx, userID
+func (_m *PullRequestRepository) GetOpenPullRequestsByReviewer(ctx context.Context, userID string) ([]domain.PullRequestShort, error) {
+	ret := _m.Called(ctx, userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetOpenPullRequestsByReviewer")
+	}
+
+	var r0 []domain.PullRequestShort
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) ([]domain.PullRequestShort, error)); ok {
+		return rf(ctx, userID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) []domain.PullRequestShort); ok {
+		r0 = rf(ctx, userID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]domain.PullRequestShort)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, userID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetPullRequestByID provides a mock function with given fields: ctx, prID
+func (_m *PullRequestRepository) GetPullRequestByID(ctx context.Context, prID string) (*domain.PullRequest, error) {
+	ret := _m.Called(ctx, prID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetPullRequestByID")
+	}
+
+	var r0 *domain.PullRequest
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*domain.PullRequest, error)); ok {
+		return rf(ctx, prID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) *domain.PullRequest); ok {
+		r0 = rf(ctx, prID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*domain.PullRequest)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, prID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetPullRequestsByReviewer provides a mock function with given fields: ctx, userID
 func (_m *PullRequestRepository) GetPullRequestsByReviewer(ctx context.Context, userID string) ([]domain.PullRequestShort, error) {
 	ret := _m.Called(ctx, userID)
@@ -42,6 +120,24 @@ func (_m *PullRequestRepository) GetPullRequestsByReviewer(ctx context.Context, 
 	}
 
 	return r0, r1
+}
+
+// RemoveReviewer provides a mock function with given fields: ctx, prID, reviewerID
+func (_m *PullRequestRepository) RemoveReviewer(ctx context.Context, prID string, reviewerID string) error {
+	ret := _m.Called(ctx, prID, reviewerID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for RemoveReviewer")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, prID, reviewerID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // NewPullRequestRepository creates a new instance of PullRequestRepository. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

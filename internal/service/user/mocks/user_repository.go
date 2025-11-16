@@ -14,6 +14,66 @@ type UserRepository struct {
 	mock.Mock
 }
 
+// GetActiveByTeam provides a mock function with given fields: ctx, teamName, excludeUserIDs
+func (_m *UserRepository) GetActiveByTeam(ctx context.Context, teamName string, excludeUserIDs []string) ([]domain.User, error) {
+	ret := _m.Called(ctx, teamName, excludeUserIDs)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetActiveByTeam")
+	}
+
+	var r0 []domain.User
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, []string) ([]domain.User, error)); ok {
+		return rf(ctx, teamName, excludeUserIDs)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, []string) []domain.User); ok {
+		r0 = rf(ctx, teamName, excludeUserIDs)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]domain.User)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, []string) error); ok {
+		r1 = rf(ctx, teamName, excludeUserIDs)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetByID provides a mock function with given fields: ctx, userID
+func (_m *UserRepository) GetByID(ctx context.Context, userID string) (*domain.User, error) {
+	ret := _m.Called(ctx, userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetByID")
+	}
+
+	var r0 *domain.User
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*domain.User, error)); ok {
+		return rf(ctx, userID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) *domain.User); ok {
+		r0 = rf(ctx, userID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*domain.User)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, userID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // SetIsActive provides a mock function with given fields: ctx, userID, isActive
 func (_m *UserRepository) SetIsActive(ctx context.Context, userID string, isActive bool) (*domain.User, error) {
 	ret := _m.Called(ctx, userID, isActive)
