@@ -178,13 +178,8 @@ func TestPullRequestService_CreatePullRequest(t *testing.T) {
 					TeamName: "team1",
 					IsActive: true,
 				}
-				candidates := []domain.User{
-					{UserID: "reviewer1", Username: "Reviewer1", TeamName: "team1", IsActive: true},
-				}
 
 				userRepo.On("GetByID", mock.Anything, "author1").Return(author, nil)
-				userRepo.On("GetActiveByTeam", mock.Anything, "team1", []string{"author1"}).Return(candidates, nil)
-
 				prRepo.On("Exists", mock.Anything, "existing-pr").Return(true, nil)
 			},
 			expectedError: domain.ErrPRExists,

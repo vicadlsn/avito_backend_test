@@ -68,20 +68,6 @@ func (s *PullRequestService) CreatePullRequest(ctx context.Context, prCreate dom
 	}
 	log.Debug("found author", slog.String("team_name", author.TeamName))
 
-	candidates, err := s.getReviewCandidates(ctx, author.TeamName, []string{prCreate.AuthorID})
-	if err != nil {
-		return nil, err
-	}
-	log.Debug("found candidates", slog.Int("count", len(candidates)))
-
-	reviewers := selectRandomReviewers(candidates, 2)
-	reviewerIDs := make([]string, len(reviewers))
-	for i, r := range reviewers {
-		reviewerIDs[i] = r.UserID
-	}
-
-	log.Debug("selected reviewers", slog.Any("reviewer_ids", reviewerIDs))
-
 	var pr *domain.PullRequest
 	err = s.txManager.Do(ctx, func(txCtx context.Context) error {
 		exists, err := s.prRepo.Exists(txCtx, prCreate.PullRequestID)
@@ -91,6 +77,20 @@ func (s *PullRequestService) CreatePullRequest(ctx context.Context, prCreate dom
 		if exists {
 			return domain.ErrPRExists
 		}
+
+		candidates, err := s.getReviewCandidates(txCtx, author.TeamName, []string{prCreate.AuthorID})
+		if err != nil {
+			return err
+		}
+		log.Debug("found candidates", slog.Int("count", len(candidates)))
+
+		reviewers := selectRandomReviewers(candidates, 2)
+		reviewerIDs := make([]string, len(reviewers))
+		for i, r := range reviewers {
+			reviewerIDs[i] = r.UserID
+		}
+
+		log.Debug("selected reviewers", slog.Any("reviewer_ids", reviewerIDs))
 
 		_, err = s.prRepo.CreatePullRequest(txCtx, prCreate)
 		if err != nil {
@@ -168,58 +168,59 @@ func (s *PullRequestService) ReassignReviewer(ctx context.Context, prID, oldUser
 		slog.String("old_user_id", oldUserID),
 	)
 
-	pr, err := s.prRepo.GetPullRequestByID(ctx, prID)
-	if err != nil {
-		if errors.Is(err, repository.ErrNotFound) {
-			return nil, "", domain.ErrPRNotFound
-		}
-		return nil, "", fmt.Errorf("failed to get PR: %w", err)
-	}
-
-	if pr.IsMerged() {
-		log.Debug("cannot reassign on merged PR")
-		return nil, "", domain.ErrPRMerged
-	}
-
-	isAssigned, err := s.prRepo.IsReviewerAssigned(ctx, prID, oldUserID)
-	if err != nil {
-		return nil, "", fmt.Errorf("failed to check reviewer assignment: %w", err)
-	}
-	if !isAssigned {
-		log.Debug("user not assigned as reviewer")
-		return nil, "", domain.ErrNotAssigned
-	}
-
-	oldReviewer, err := s.userRepo.GetByID(ctx, oldUserID)
-	if err != nil {
-		if errors.Is(err, repository.ErrNotFound) {
-			return nil, "", domain.ErrUserNotFound
-		}
-		return nil, "", fmt.Errorf("failed to get old reviewer: %w", err)
-	}
-
-	log.Debug("found old reviewer", slog.String("team_name", oldReviewer.TeamName))
-
-	excludeIDs := []string{pr.AuthorID}
-	excludeIDs = append(excludeIDs, pr.AssignedReviewers...)
-
-	candidates, err := s.getReviewCandidates(ctx, oldReviewer.TeamName, excludeIDs)
-	if err != nil {
-		return nil, "", err
-	}
-
-	log.Debug("found candidates for reassignment", slog.Int("count", len(candidates)))
-
-	if len(candidates) == 0 {
-		log.Debug("no active replacement candidates available")
-		return nil, "", domain.ErrNoCandidate
-	}
-
-	newReviewer := selectRandomReviewers(candidates, 1)[0]
-	log.Info("selected new reviewer", slog.String("new_user_id", newReviewer.UserID))
-
 	var updatedPR *domain.PullRequest
-	err = s.txManager.Do(ctx, func(txCtx context.Context) error {
+	var newReviewerID string
+
+	err := s.txManager.Do(ctx, func(txCtx context.Context) error {
+		pr, err := s.prRepo.GetPullRequestByID(txCtx, prID)
+		if err != nil {
+			if errors.Is(err, repository.ErrNotFound) {
+				return domain.ErrPRNotFound
+			}
+			return fmt.Errorf("failed to get PR: %w", err)
+		}
+
+		if pr.IsMerged() {
+			log.Debug("cannot reassign on merged PR")
+			return domain.ErrPRMerged
+		}
+
+		isAssigned, err := s.prRepo.IsReviewerAssigned(txCtx, prID, oldUserID)
+		if err != nil {
+			return fmt.Errorf("failed to check reviewer assignment: %w", err)
+		}
+		if !isAssigned {
+			log.Debug("user not assigned as reviewer")
+			return domain.ErrNotAssigned
+		}
+
+		oldReviewer, err := s.userRepo.GetByID(txCtx, oldUserID)
+		if err != nil {
+			if errors.Is(err, repository.ErrNotFound) {
+				return domain.ErrUserNotFound
+			}
+			return fmt.Errorf("failed to get old reviewer: %w", err)
+		}
+
+		log.Debug("found old reviewer", slog.String("team_name", oldReviewer.TeamName))
+
+		excludeIDs := []string{pr.AuthorID}
+		excludeIDs = append(excludeIDs, pr.AssignedReviewers...)
+
+		candidates, err := s.getReviewCandidates(txCtx, oldReviewer.TeamName, excludeIDs)
+		if err != nil {
+			return err
+		}
+		log.Debug("found candidates for reassignment", slog.Int("count", len(candidates)))
+
+		if len(candidates) == 0 {
+			log.Debug("no active replacement candidates available")
+			return domain.ErrNoCandidate
+		}
+
+		newReviewer := selectRandomReviewers(candidates, 1)[0]
+		log.Info("selected new reviewer", slog.String("new_user_id", newReviewer.UserID))
+
 		if err := s.prRepo.RemoveReviewer(txCtx, prID, oldUserID); err != nil {
 			return fmt.Errorf("failed to remove reviewer: %w", err)
 		}
@@ -228,25 +229,22 @@ func (s *PullRequestService) ReassignReviewer(ctx context.Context, prID, oldUser
 			return fmt.Errorf("failed to assign new reviewer: %w", err)
 		}
 
-		pr, err := s.prRepo.GetPullRequestByID(txCtx, prID)
+		pr, err = s.prRepo.GetPullRequestByID(txCtx, prID)
 		if err != nil {
 			return fmt.Errorf("failed to get updated PR: %w", err)
 		}
 		updatedPR = pr
+		newReviewerID = newReviewer.UserID
 
 		return nil
 	})
 
 	if err != nil {
-		if errors.Is(err, domain.ErrNotAssigned) {
-			return nil, "", domain.ErrNotAssigned
-		}
-		log.Error("failed to reassign reviewer", slog.Any("error", err))
 		return nil, "", err
 	}
 
-	log.Info("reviewer reassigned successfully")
-	return updatedPR, newReviewer.UserID, nil
+	log.Info("reviewer reassigned")
+	return updatedPR, newReviewerID, nil
 }
 
 func (s *PullRequestService) getPRAuthor(ctx context.Context, authorID string) (*domain.User, error) {
