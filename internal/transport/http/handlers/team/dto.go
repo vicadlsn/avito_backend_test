@@ -3,13 +3,13 @@ package team
 import "avito_backend_task/internal/domain"
 
 type TeamMemberDTO struct {
-	UserID   string `json:"user_id" validate:"required"`
-	Username string `json:"username" validate:"required"`
+	UserID   string `json:"user_id" validate:"required,max=64"`
+	Username string `json:"username" validate:"required,max=64"`
 	IsActive bool   `json:"is_active"`
 }
 
 type TeamDTO struct {
-	TeamName string          `json:"team_name" validate:"required"`
+	TeamName string          `json:"team_name" validate:"required,max=64"`
 	Members  []TeamMemberDTO `json:"members" validate:"required,min=1,dive"`
 }
 

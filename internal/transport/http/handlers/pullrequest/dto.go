@@ -7,18 +7,18 @@ import (
 )
 
 type CreatePullRequestRequest struct {
-	PullRequestID   string `json:"pull_request_id" validate:"required"`
-	PullRequestName string `json:"pull_request_name" validate:"required"`
-	AuthorID        string `json:"author_id" validate:"required"`
+	PullRequestID   string `json:"pull_request_id" validate:"required,max=64"`
+	PullRequestName string `json:"pull_request_name" validate:"required,max=64"`
+	AuthorID        string `json:"author_id" validate:"required,max=64"`
 }
 
 type MergePullRequestRequest struct {
-	PullRequestID string `json:"pull_request_id" validate:"required"`
+	PullRequestID string `json:"pull_request_id" validate:"required,max=64"`
 }
 
 type ReassignReviewerRequest struct {
-	PullRequestID string `json:"pull_request_id" validate:"required"`
-	OldUserID     string `json:"old_user_id" validate:"required"`
+	PullRequestID string `json:"pull_request_id" validate:"required,max=64"`
+	OldUserID     string `json:"old_user_id" validate:"required,max=64"`
 }
 
 type PullRequestDTO struct {

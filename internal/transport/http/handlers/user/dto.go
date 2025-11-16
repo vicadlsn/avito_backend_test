@@ -3,7 +3,7 @@ package user
 import "avito_backend_task/internal/domain"
 
 type SetIsActiveRequest struct {
-	UserID   string `json:"user_id" validate:"required"`
+	UserID   string `json:"user_id" validate:"required,max=64"`
 	IsActive bool   `json:"is_active"`
 }
 
